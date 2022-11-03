@@ -35,6 +35,7 @@ private:
 
     void createWindow(const std::string &name, int width, int height, float x, float y);
     bool processNextEvent();
+    void processKeyCode(uint16_t);
 
     static GameApp *_instance;
 

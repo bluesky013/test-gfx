@@ -38,8 +38,6 @@ message(STATUS "\${GFX_EXTERNAL_PATH}: ${GFX_EXTERNAL_PATH}")
 # set(NX ON)
 # set(CC_NX_WINDOWS ON)
 
-set(CC_USE_GLES2 ON)
-set(CC_USE_VULKAN ON)
 add_definitions("-DUSE_JOB_SYSTEM_TASKFLOW")
 
 include(${COCOS_2dx_LITE_PATH}/cmake/predefine.cmake)

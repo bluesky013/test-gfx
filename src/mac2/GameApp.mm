@@ -76,7 +76,7 @@ void GameApp::Run() {
 
         if (!_paused) TestBaseI::update();
     }
-    
+
     cc::TestBaseI::destroyGlobal();
     destroy();
 
@@ -88,7 +88,7 @@ void GameApp::initialize() {
     createWindow("Cocos GFX Test", _screenWidth, _screenHeight, 0.1, 0.1);
 
     WindowInfo info;
-    info.windowHandle  = _metalView.metalLayer;
+    info.windowHandle  = _metalView;
     info.screen.width  = _screenWidth;
     info.screen.height = _screenHeight;
     info.pixelRatio = _pixelRatio;
@@ -140,6 +140,14 @@ void GameApp::createWindow(const std::string &name, int width, int height, float
                                                object: _nativeWindow];
 }
 
+void GameApp::processKeyCode(uint16_t keyCode) {
+    if (keyCode == 49) {
+        cc::TestBaseI::spacePressed();
+    } else if (keyCode == 124) {
+        cc::TestBaseI::onTouchEnd();
+    }
+}
+
 bool GameApp::processNextEvent() {
     @autoreleasepool {
         NSEvent* event = [NSApp nextEventMatchingMask: NSEventMaskAny
@@ -148,17 +156,14 @@ bool GameApp::processNextEvent() {
                                               dequeue: YES];
         if (event != nil) {
             switch (event.type) {
+                case NSEventTypeKeyUp:
+                    processKeyCode(event.keyCode);
+                    break;
                 case NSEventTypeLeftMouseDown:
                 case NSEventTypeRightMouseDown:
-                    break;
-                case NSEventTypeKeyUp:
-                    if (event.keyCode == NSEventTypeKeyUp) {
-                        cc::TestBaseI::spacePressed();
-                    }
-                    break;
                 case NSEventTypeLeftMouseUp:
                 case NSEventTypeRightMouseUp:
-                    cc::TestBaseI::onTouchEnd();
+                default:
                     break;
             }
 

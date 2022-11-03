@@ -22,6 +22,7 @@
 #include "tests/StencilTest.h"
 #include "tests/StressTest.h"
 #include "tests/SubpassTest.h"
+#include "tests/TransientPoolTest.h"
 
 #include "utils/Math.h"
 
@@ -48,7 +49,8 @@ gfx::Device *    TestBaseI::device     = nullptr;
 gfx::RenderPass *TestBaseI::renderPass = nullptr;
 
 ccstd::vector<TestBaseI::createFunc> TestBaseI::tests = {
-    SubpassTest::create,
+    TransientPoolTest::create,
+//    SubpassTest::create,
 //    ScriptTest::create,
     ComputeTest::create,
     StressTest::create,

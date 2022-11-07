@@ -11,7 +11,7 @@ bool ClearScreen::onInit() {
 
 void ClearScreen::onTick() {
     auto *swapchain = swapchains[0];
-    auto *fbo       = fbos[0];
+    auto &fbo       = fbos[0];
 
     gfx::Color clearColor;
     clearColor.x = 1.0F;

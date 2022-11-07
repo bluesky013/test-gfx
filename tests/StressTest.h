@@ -25,28 +25,26 @@ protected:
 
     void recordRenderPass(uint jobIdx);
 
-    gfx::Shader *_shader          = nullptr;
-    gfx::Buffer *_vertexBuffer    = nullptr;
-    gfx::Buffer *_uniformBufferVP = nullptr;
-
     struct ViewProjUBO {
         Mat4 matViewProj;
         Vec4 color;
     };
     ViewProjUBO _uboVP;
 
-    gfx::Buffer *       _uniWorldBuffer = nullptr, *_uniWorldBufferView = nullptr;
-    gfx::DescriptorSet *_uniDescriptorSet = nullptr;
-
-    ccstd::vector<gfx::Buffer *>        _worldBuffers;
-    ccstd::vector<gfx::DescriptorSet *> _descriptorSets;
-
-    gfx::DescriptorSetLayout *_descriptorSetLayout = nullptr;
-    gfx::PipelineLayout *     _pipelineLayout      = nullptr;
-    gfx::PipelineState *      _pipelineState       = nullptr;
-    gfx::InputAssembler *     _inputAssembler      = nullptr;
-
-    ccstd::vector<gfx::CommandBuffer *> _parallelCBs;
+    IntrusivePtr<gfx::Shader>                       _shader;
+    IntrusivePtr<gfx::Buffer>                       _vertexBuffer;
+    IntrusivePtr<gfx::Buffer>                       _uniformBufferVP;
+    IntrusivePtr<gfx::Buffer>                       _uniWorldBuffer;
+    IntrusivePtr<gfx::Buffer>                       _uniWorldBufferView;
+    IntrusivePtr<gfx::DescriptorSet>                _uniDescriptorSet;
+    IntrusivePtr<gfx::DescriptorSetLayout>          _descriptorSetLayout;
+    IntrusivePtr<gfx::PipelineLayout>               _pipelineLayout;
+    IntrusivePtr<gfx::PipelineState>                _pipelineState;
+    IntrusivePtr<gfx::InputAssembler>               _inputAssembler;
+    ccstd::vector<IntrusivePtr<gfx::Buffer>>        _worldBuffers;
+    ccstd::vector<IntrusivePtr<gfx::DescriptorSet>> _descriptorSets;
+    ccstd::vector<IntrusivePtr<gfx::CommandBuffer>> _parallelCBContainer;
+    ccstd::vector<gfx::CommandBuffer*>              _parallelCBs;
 
     uint _worldBufferStride = 0U;
     uint _threadCount       = 1U;

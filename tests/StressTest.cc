@@ -75,35 +75,25 @@ void hsV2Rgb(const float h, const float s, const float v, float &r, float &g, fl
 }
 
 void StressTest::onDestroy() {
-    CC_SAFE_DESTROY_AND_DELETE(_vertexBuffer);
-    CC_SAFE_DESTROY_AND_DELETE(_inputAssembler);
-
 #if USE_DYNAMIC_UNIFORM_BUFFER
-    CC_SAFE_DESTROY_AND_DELETE(_uniDescriptorSet);
-    CC_SAFE_DESTROY_AND_DELETE(_uniWorldBufferView);
-    CC_SAFE_DESTROY_AND_DELETE(_uniWorldBuffer);
+    _uniDescriptorSet = nullptr;
+    _uniWorldBufferView = nullptr;
+    _uniWorldBuffer     = nullptr;
 #else
-    for (uint i = 0u; i < _descriptorSets.size(); i++) {
-        CC_SAFE_DESTROY_AND_DELETE(_descriptorSets[i]);
-    }
     _descriptorSets.clear();
-
-    for (uint i = 0u; i < _worldBuffers.size(); i++) {
-        CC_SAFE_DESTROY_AND_DELETE(_worldBuffers[i]);
-    }
     _worldBuffers.clear();
 #endif
 
-    CC_SAFE_DESTROY_AND_DELETE(_uniformBufferVP);
-    CC_SAFE_DESTROY_AND_DELETE(_shader);
-    CC_SAFE_DESTROY_AND_DELETE(_descriptorSetLayout);
-    CC_SAFE_DESTROY_AND_DELETE(_pipelineLayout);
-    CC_SAFE_DESTROY_AND_DELETE(_pipelineState);
+    _inputAssembler = nullptr;
+    _vertexBuffer    = nullptr;
+    _uniformBufferVP = nullptr;
+    _shader = nullptr;
+    _descriptorSetLayout = nullptr;
+    _pipelineLayout = nullptr;
+    _pipelineState = nullptr;
 
-    for (auto &parallelCB : _parallelCBs) {
-        CC_SAFE_DESTROY_AND_DELETE(parallelCB);
-    }
     _parallelCBs.clear();
+    _parallelCBContainer.clear();
 
     for (size_t i = 1U; i < commandBuffers.size(); ++i) {
         CC_SAFE_DESTROY_AND_DELETE(commandBuffers[i]);
@@ -144,7 +134,8 @@ bool StressTest::onInit() {
 #endif
 
     for (uint i = _parallelCBs.size(); i < cbCount; ++i) {
-        _parallelCBs.push_back(device->createCommandBuffer(info));
+        _parallelCBContainer.emplace_back(device->createCommandBuffer(info));
+        _parallelCBs.push_back(_parallelCBContainer.back().get());
     }
 
     return true;
@@ -368,7 +359,7 @@ void StressTest::createPipeline() {
 #if PARALLEL_STRATEGY == PARALLEL_STRATEGY_SEQUENTIAL
 void StressTest::recordRenderPass(uint passIndex) {
     auto *swapchain = swapchains[0];
-    auto *fbo       = fbos[0];
+    auto &fbo       = fbos[0];
 
     gfx::Rect           renderArea    = {0, 0, swapchain->getWidth(), swapchain->getHeight()};
     gfx::CommandBuffer *commandBuffer = commandBuffers[0];
@@ -398,7 +389,7 @@ void StressTest::recordRenderPass(uint passIndex) {
 #elif PARALLEL_STRATEGY == PARALLEL_STRATEGY_DC_BASED_FINER_JOBS || PARALLEL_STRATEGY == PARALLEL_STRATEGY_DC_BASED_FINER_JOBS_MULTI_PRIMARY
 void StressTest::recordRenderPass(uint jobIdx) {
     auto *swapchain = swapchains[0];
-    auto *fbo       = fbos[0];
+    auto &fbo       = fbos[0];
 
     gfx::Rect     scissor = {0, 0, swapchain->getWidth(), swapchain->getHeight()};
     gfx::Viewport vp      = {0, 0, swapchain->getWidth(), swapchain->getHeight()};
@@ -438,7 +429,7 @@ void StressTest::recordRenderPass(uint jobIdx) {
 #elif PARALLEL_STRATEGY == PARALLEL_STRATEGY_DC_BASED
 void StressTest::recordRenderPass(uint threadIdx) {
     auto *swapchain = swapchains[0];
-    auto *fbo       = fbos[0];
+    auto &fbo       = fbos[0];
 
     gfx::Rect           scissor       = {0, 0, swapchain->getWidth(), swapchain->getHeight()};
     gfx::Viewport       vp            = {0, 0, swapchain->getWidth(), swapchain->getHeight()};
@@ -477,7 +468,7 @@ void StressTest::recordRenderPass(uint threadIdx) {
 #elif PARALLEL_STRATEGY == PARALLEL_STRATEGY_RP_BASED_SECONDARY
 void StressTest::recordRenderPass(uint passIndex) {
     auto *swapchain = swapchains[0];
-    auto *fbo       = fbos[0];
+    auto &fbo       = fbos[0];
 
     gfx::Rect     scissor   = {0, 0, swapchain->getWidth(), swapchain->getHeight()};
     gfx::Viewport vp        = {0, 0, swapchain->getWidth(), swapchain->getHeight()};
@@ -506,7 +497,7 @@ void StressTest::recordRenderPass(uint passIndex) {
 #elif PARALLEL_STRATEGY == PARALLEL_STRATEGY_RP_BASED_PRIMARY
 void StressTest::recordRenderPass(uint passIndex) {
     auto *swapchain = swapchains[0];
-    auto *fbo       = fbos[0];
+    auto &fbo       = fbos[0];
 
     gfx::Rect renderArea = {0, 0, swapchain->getWidth(), swapchain->getHeight()};
     gfx::CommandBuffer *commandBuffer = commandBuffers[passIndex];
@@ -539,7 +530,7 @@ void StressTest::onSpacePressed() {
 
 void StressTest::onTick() {
     auto *swapchain = swapchains[0];
-    auto *fbo       = fbos[0];
+    auto &fbo       = fbos[0];
 
     // simulate heavy logic operation
     std::this_thread::sleep_for(std::chrono::milliseconds(MAIN_THREAD_SLEEP));

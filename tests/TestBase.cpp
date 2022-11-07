@@ -45,9 +45,6 @@ TestBaseI * TestBaseI::test                   = nullptr;
 const bool  TestBaseI::MANUAL_BARRIER         = true;
 const float TestBaseI::NANOSECONDS_PER_SECOND = 1000000000.F;
 
-gfx::Device *    TestBaseI::device     = nullptr;
-gfx::RenderPass *TestBaseI::renderPass = nullptr;
-
 ccstd::vector<TestBaseI::createFunc> TestBaseI::tests = {
     TransientPoolTest::create,
 //    SubpassTest::create,
@@ -70,9 +67,11 @@ ccstd::vector<TestBaseI::createFunc> TestBaseI::tests = {
 FrameRate                    TestBaseI::logicThread;
 FrameRate                    TestBaseI::renderThread;
 FrameRate                    TestBaseI::deviceThread;
-ccstd::vector<gfx::CommandBuffer *> TestBaseI::commandBuffers;
-ccstd::vector<gfx::Swapchain *>     TestBaseI::swapchains;
-ccstd::vector<gfx::Framebuffer *>   TestBaseI::fbos;
+ccstd::vector<gfx::CommandBuffer *>           TestBaseI::commandBuffers;
+ccstd::vector<gfx::Swapchain *>               TestBaseI::swapchains;
+ccstd::vector<IntrusivePtr<gfx::Framebuffer>> TestBaseI::fbos;
+IntrusivePtr<gfx::RenderPass>                 TestBaseI::renderPass;
+gfx::Device                                  *TestBaseI::device     = nullptr;
 
 framegraph::FrameGraph TestBaseI::fg;
 
@@ -156,10 +155,8 @@ void TestBaseI::destroyGlobal() {
     delete fu;
     delete se;
 
-    for (auto *fbo : fbos) {
-        CC_SAFE_DESTROY_AND_DELETE(fbo)
-    }
-    CC_SAFE_DESTROY_AND_DELETE(renderPass)
+    fbos.clear();
+    renderPass = nullptr;
 
     for (auto *swapchain : swapchains) {
         CC_SAFE_DESTROY_AND_DELETE(swapchain)

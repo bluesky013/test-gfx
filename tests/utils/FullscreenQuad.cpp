@@ -148,13 +148,13 @@ FullscreenQuad::FullscreenQuad(gfx::Device *device, gfx::RenderPass *renderPass,
 }
 
 FullscreenQuad::~FullscreenQuad() {
-    CC_SAFE_DESTROY_AND_DELETE(_shader)
-    CC_SAFE_DESTROY_AND_DELETE(_vertexBuffer)
-    CC_SAFE_DESTROY_AND_DELETE(_inputAssembler)
-    CC_SAFE_DESTROY_AND_DELETE(_descriptorSetLayout)
-    CC_SAFE_DESTROY_AND_DELETE(_pipelineLayout)
-    CC_SAFE_DESTROY_AND_DELETE(_pipelineState)
-    CC_SAFE_DESTROY_AND_DELETE(_descriptorSet)
+    _shader              = nullptr;
+    _inputAssembler      = nullptr;
+    _descriptorSetLayout = nullptr;
+    _pipelineLayout      = nullptr;
+    _pipelineState       = nullptr;
+    _descriptorSet       = nullptr;
+    _vertexBuffer        = nullptr;
 }
 
 void FullscreenQuad::draw(gfx::CommandBuffer *commandBuffer) {

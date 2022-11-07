@@ -22,27 +22,27 @@ private:
     void createComputeVBPipeline();
     void createComputeBGPipeline();
 
-    gfx::Shader *             _shader              = nullptr;
-    gfx::Buffer *             _uniformBufferMVP    = nullptr;
-    gfx::DescriptorSet *      _descriptorSet       = nullptr;
-    gfx::DescriptorSetLayout *_descriptorSetLayout = nullptr;
-    gfx::PipelineLayout *     _pipelineLayout      = nullptr;
-    gfx::PipelineState *      _pipelineState       = nullptr;
-    gfx::InputAssembler *     _inputAssembler      = nullptr;
+    IntrusivePtr<gfx::Shader>              _shader;
+    IntrusivePtr<gfx::Buffer>              _uniformBufferMVP;
+    IntrusivePtr<gfx::DescriptorSet>       _descriptorSet;
+    IntrusivePtr<gfx::DescriptorSetLayout> _descriptorSetLayout;
+    IntrusivePtr<gfx::PipelineLayout>      _pipelineLayout;
+    IntrusivePtr<gfx::PipelineState>       _pipelineState;
+    IntrusivePtr<gfx::InputAssembler>      _inputAssembler;
 
-    gfx::Buffer *             _compConstantsBuffer     = nullptr;
-    gfx::Buffer *             _compStorageBuffer       = nullptr;
-    gfx::Shader *             _compShader              = nullptr;
-    gfx::DescriptorSetLayout *_compDescriptorSetLayout = nullptr;
-    gfx::PipelineLayout *     _compPipelineLayout      = nullptr;
-    gfx::PipelineState *      _compPipelineState       = nullptr;
-    gfx::DescriptorSet *      _compDescriptorSet       = nullptr;
+    IntrusivePtr<gfx::Buffer>              _compConstantsBuffer;
+    IntrusivePtr<gfx::Buffer>              _compStorageBuffer;
+    IntrusivePtr<gfx::Shader>              _compShader;
+    IntrusivePtr<gfx::DescriptorSetLayout> _compDescriptorSetLayout;
+    IntrusivePtr<gfx::PipelineLayout>      _compPipelineLayout;
+    IntrusivePtr<gfx::PipelineState>       _compPipelineState;
+    IntrusivePtr<gfx::DescriptorSet>       _compDescriptorSet;
 
-    gfx::Shader *             _compBGShader              = nullptr;
-    gfx::DescriptorSetLayout *_compBGDescriptorSetLayout = nullptr;
-    gfx::PipelineLayout *     _compBGPipelineLayout      = nullptr;
-    gfx::PipelineState *      _compBGPipelineState       = nullptr;
-    gfx::DescriptorSet *      _compBGDescriptorSet       = nullptr;
+    IntrusivePtr<gfx::Shader>              _compBGShader;
+    IntrusivePtr<gfx::DescriptorSetLayout> _compBGDescriptorSetLayout;
+    IntrusivePtr<gfx::PipelineLayout>      _compBGPipelineLayout;
+    IntrusivePtr<gfx::PipelineState>       _compBGPipelineState;
+    IntrusivePtr<gfx::DescriptorSet>       _compBGDescriptorSet;
 };
 
 } // namespace cc

@@ -53,15 +53,15 @@ Vec3 vec3ScaleAndAdd(const Vec3 &a, const Vec3 &b, float scale) {
 } // namespace
 
 void ParticleTest::onDestroy() {
-    CC_SAFE_DESTROY_AND_DELETE(_shader);
-    CC_SAFE_DESTROY_AND_DELETE(_vertexBuffer);
-    CC_SAFE_DESTROY_AND_DELETE(_indexBuffer);
-    CC_SAFE_DESTROY_AND_DELETE(_inputAssembler);
-    CC_SAFE_DESTROY_AND_DELETE(_pipelineState);
-    CC_SAFE_DESTROY_AND_DELETE(_descriptorSet);
-    CC_SAFE_DESTROY_AND_DELETE(_descriptorSetLayout);
-    CC_SAFE_DESTROY_AND_DELETE(_pipelineLayout);
-    CC_SAFE_DESTROY_AND_DELETE(_uniformBuffer);
+    _shader              = nullptr;
+    _inputAssembler      = nullptr;
+    _pipelineState       = nullptr;
+    _descriptorSet       = nullptr;
+    _descriptorSetLayout = nullptr;
+    _pipelineLayout      = nullptr;
+    _vertexBuffer        = nullptr;
+    _indexBuffer         = nullptr;
+    _uniformBuffer       = nullptr;
 }
 
 bool ParticleTest::onInit() {
@@ -376,7 +376,7 @@ void ParticleTest::createPipeline() {
 
 void ParticleTest::onTick() {
     auto *swapchain = swapchains[0];
-    auto *fbo       = fbos[0];
+    auto &fbo       = fbos[0];
 
     printTime();
 

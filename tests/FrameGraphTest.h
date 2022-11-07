@@ -19,16 +19,16 @@ private:
     void createPipeline();
     void createInputAssembler();
 
-    gfx::Shader *             _shader              = nullptr;
-    gfx::Buffer *             _vertexBuffer        = nullptr;
-    gfx::Buffer *             _uniformBuffer       = nullptr;
-    gfx::Buffer *             _uniformBufferMVP    = nullptr;
-    gfx::DescriptorSet *      _descriptorSet       = nullptr;
-    gfx::DescriptorSetLayout *_descriptorSetLayout = nullptr;
-    gfx::PipelineLayout *     _pipelineLayout      = nullptr;
-    gfx::PipelineState *      _pipelineState       = nullptr;
-    gfx::InputAssembler *     _inputAssembler      = nullptr;
-    gfx::Buffer *             _indexBuffer         = nullptr;
+    IntrusivePtr<gfx::Shader>              _shader;
+    IntrusivePtr<gfx::Buffer>              _vertexBuffer;
+    IntrusivePtr<gfx::Buffer>              _uniformBuffer;
+    IntrusivePtr<gfx::Buffer>              _uniformBufferMVP;
+    IntrusivePtr<gfx::DescriptorSet>       _descriptorSet;
+    IntrusivePtr<gfx::DescriptorSetLayout> _descriptorSetLayout;
+    IntrusivePtr<gfx::PipelineLayout>      _pipelineLayout;
+    IntrusivePtr<gfx::PipelineState>       _pipelineState;
+    IntrusivePtr<gfx::InputAssembler>      _inputAssembler;
+    IntrusivePtr<gfx::Buffer>              _indexBuffer;
 };
 
 } // namespace cc

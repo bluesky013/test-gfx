@@ -15,19 +15,19 @@ enum class PipelineType : uint8_t {
 } // namespace
 
 void StencilTest::onDestroy() {
-    CC_SAFE_DESTROY_AND_DELETE(_shader);
-    CC_SAFE_DESTROY_AND_DELETE(_vertexBuffer);
-    CC_SAFE_DESTROY_AND_DELETE(_inputAssembler);
+    _shader         = nullptr;
+    _inputAssembler = nullptr;
     for (uint i = 0; i < BINDING_COUNT; i++) {
-        CC_SAFE_DESTROY_AND_DELETE(_uniformBuffer[i]);
-        CC_SAFE_DESTROY_AND_DELETE(_descriptorSet[i]);
+        _uniformBuffer[i] = nullptr;
+        _descriptorSet[i] = nullptr;
     }
-    CC_SAFE_DESTROY_AND_DELETE(_descriptorSetLayout);
-    CC_SAFE_DESTROY_AND_DELETE(_pipelineLayout);
-    for (auto &i : _pipelineState) {
-        CC_SAFE_DESTROY_AND_DELETE(i);
+    _descriptorSetLayout = nullptr;
+    _pipelineLayout      = nullptr;
+    for (auto &pipeline : _pipelineState) {
+        pipeline = nullptr;
     }
-}
+    _vertexBuffer = nullptr;
+};
 
 bool StencilTest::onInit() {
     createShader();
@@ -334,7 +334,7 @@ void StencilTest::createPipelineState() {
 
 void StencilTest::onTick() {
     auto *swapchain = swapchains[0];
-    auto *fbo       = fbos[0];
+    auto &fbo       = fbos[0];
 
     uint generalBarrierIdx = _frameCount ? 1 : 0;
 

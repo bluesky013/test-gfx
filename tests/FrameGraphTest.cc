@@ -4,16 +4,16 @@
 namespace cc {
 
 void FrameGraphTest::onDestroy() {
-    CC_SAFE_DESTROY_AND_DELETE(_vertexBuffer);
-    CC_SAFE_DESTROY_AND_DELETE(_inputAssembler);
-    CC_SAFE_DESTROY_AND_DELETE(_uniformBuffer);
-    CC_SAFE_DESTROY_AND_DELETE(_uniformBufferMVP);
-    CC_SAFE_DESTROY_AND_DELETE(_shader);
-    CC_SAFE_DESTROY_AND_DELETE(_descriptorSet);
-    CC_SAFE_DESTROY_AND_DELETE(_descriptorSetLayout);
-    CC_SAFE_DESTROY_AND_DELETE(_pipelineLayout);
-    CC_SAFE_DESTROY_AND_DELETE(_pipelineState);
-    CC_SAFE_DESTROY_AND_DELETE(_indexBuffer);
+    _inputAssembler      = nullptr;
+    _shader              = nullptr;
+    _descriptorSet       = nullptr;
+    _descriptorSetLayout = nullptr;
+    _pipelineLayout      = nullptr;
+    _pipelineState       = nullptr;
+    _vertexBuffer        = nullptr;
+    _uniformBuffer       = nullptr;
+    _uniformBufferMVP    = nullptr;
+    _indexBuffer         = nullptr;
 }
 
 bool FrameGraphTest::onInit() {

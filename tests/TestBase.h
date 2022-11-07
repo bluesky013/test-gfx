@@ -20,7 +20,7 @@ class ObjReader;
 namespace cc {
 
 using WindowInfo = struct WindowInfo {
-    void *    windowHandle = nullptr;
+    void     *windowHandle = nullptr;
     float     pixelRatio   = 1.F;
     gfx::Rect screen;
 };
@@ -146,8 +146,8 @@ public:
     static void               runScript(const ccstd::string &file);
     static void               tickScript();
     static void               scriptEngineGC();
-    static unsigned char *    rgb2rgba(Image *img);
-    static gfx::Texture *     createTextureWithFile(const gfx::TextureInfo &partialInfo, const ccstd::string &imageFile);
+    static unsigned char     *rgb2rgba(Image *img);
+    static gfx::Texture      *createTextureWithFile(const gfx::TextureInfo &partialInfo, const ccstd::string &imageFile);
     static void               modifyProjectionBasedOnDevice(Mat4 *projection, gfx::Swapchain *swapchain);
     static void               createOrthographic(float left, float right, float bottom, float top, float near, float zFar, Mat4 *dst, gfx::Swapchain *swapchain);
     static void               createPerspective(float fov, float aspect, float near, float zFar, Mat4 *dst, gfx::Swapchain *swapchain);
@@ -182,11 +182,12 @@ public:
     static FrameRate  deviceThread;
     static const bool MANUAL_BARRIER;
 
-    static gfx::Device *                device;
-    static gfx::RenderPass *            renderPass;
+    static gfx::Device                      *device;
     static std::vector<gfx::CommandBuffer *> commandBuffers;
     static std::vector<gfx::Swapchain *>     swapchains;
-    static std::vector<gfx::Framebuffer *>   fbos;
+
+    static IntrusivePtr<gfx::RenderPass>               renderPass;
+    static std::vector<IntrusivePtr<gfx::Framebuffer>> fbos;
 
     static framegraph::FrameGraph fg;
 
@@ -233,10 +234,10 @@ public:
 
 protected:
     static ccstd::vector<WindowInfo> windowInfos;
-    static int                curTestIndex;
+    static int                       curTestIndex;
     static ccstd::vector<createFunc> tests;
-    static TestBaseI *        test;
-    static int                nextDirection;
+    static TestBaseI                *test;
+    static int                       nextDirection;
 
     virtual void onSpacePressed() {}
 

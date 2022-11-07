@@ -20,16 +20,16 @@ private:
     void createInputAssembler();
     void createTexture();
 
-    ccstd::vector<gfx::Texture *> _textureViews = {};
+    ccstd::vector<IntrusivePtr<gfx::Texture>> _textureViews = {};
 
-    gfx::Shader *             _shader              = nullptr;
-    gfx::Buffer *             _vertexBuffer        = nullptr;
-    gfx::Buffer *             _uniformBuffer       = nullptr;
-    gfx::InputAssembler *     _inputAssembler      = nullptr;
-    gfx::DescriptorSet *      _descriptorSet       = nullptr;
-    gfx::DescriptorSetLayout *_descriptorSetLayout = nullptr;
-    gfx::PipelineLayout *     _pipelineLayout      = nullptr;
-    gfx::PipelineState *      _pipelineState       = nullptr;
+    IntrusivePtr<gfx::Shader>              _shader;
+    IntrusivePtr<gfx::Buffer>              _vertexBuffer;
+    IntrusivePtr<gfx::Buffer>              _uniformBuffer;
+    IntrusivePtr<gfx::InputAssembler>      _inputAssembler;
+    IntrusivePtr<gfx::DescriptorSet>       _descriptorSet;
+    IntrusivePtr<gfx::DescriptorSetLayout> _descriptorSetLayout;
+    IntrusivePtr<gfx::PipelineLayout>      _pipelineLayout;
+    IntrusivePtr<gfx::PipelineState>       _pipelineState;
 
     uint32_t _oldTime = 0;
 };

@@ -17,28 +17,26 @@ static uint bgGroupSizeY = 8U;
 static FullscreenQuad *quad{nullptr};
 
 void ComputeTest::onDestroy() {
-    CC_SAFE_DESTROY_AND_DELETE(_inputAssembler);
-    CC_SAFE_DESTROY_AND_DELETE(_uniformBufferMVP);
-    CC_SAFE_DESTROY_AND_DELETE(_shader);
-    CC_SAFE_DESTROY_AND_DELETE(_descriptorSet);
-    CC_SAFE_DESTROY_AND_DELETE(_descriptorSetLayout);
-    CC_SAFE_DESTROY_AND_DELETE(_pipelineLayout);
-    CC_SAFE_DESTROY_AND_DELETE(_pipelineState);
+    _inputAssembler            = nullptr;
+    _shader                    = nullptr;
+    _descriptorSet             = nullptr;
+    _descriptorSetLayout       = nullptr;
+    _pipelineLayout            = nullptr;
+    _pipelineState             = nullptr;
+    _compShader                = nullptr;
+    _compDescriptorSet         = nullptr;
+    _compDescriptorSetLayout   = nullptr;
+    _compPipelineLayout        = nullptr;
+    _compPipelineState         = nullptr;
+    _compBGShader              = nullptr;
+    _compBGDescriptorSet       = nullptr;
+    _compBGDescriptorSetLayout = nullptr;
+    _compBGPipelineLayout      = nullptr;
+    _compBGPipelineState       = nullptr;
 
-    CC_SAFE_DESTROY_AND_DELETE(_compShader);
-    CC_SAFE_DESTROY_AND_DELETE(_compConstantsBuffer);
-    CC_SAFE_DESTROY_AND_DELETE(_compStorageBuffer);
-    CC_SAFE_DESTROY_AND_DELETE(_compDescriptorSet);
-    CC_SAFE_DESTROY_AND_DELETE(_compDescriptorSetLayout);
-    CC_SAFE_DESTROY_AND_DELETE(_compPipelineLayout);
-    CC_SAFE_DESTROY_AND_DELETE(_compPipelineState);
-
-    CC_SAFE_DESTROY_AND_DELETE(_compBGShader);
-    CC_SAFE_DESTROY_AND_DELETE(_compBGDescriptorSet);
-    CC_SAFE_DESTROY_AND_DELETE(_compBGDescriptorSetLayout);
-    CC_SAFE_DESTROY_AND_DELETE(_compBGPipelineLayout);
-    CC_SAFE_DESTROY_AND_DELETE(_compBGPipelineState);
-
+    _uniformBufferMVP    = nullptr;
+    _compConstantsBuffer = nullptr;
+    _compStorageBuffer   = nullptr;
     CC_SAFE_DELETE(quad);
 }
 
@@ -401,7 +399,7 @@ void ComputeTest::createPipeline() {
 
 void ComputeTest::onTick() {
     auto *swapchain = swapchains[0];
-    auto *fbo       = fbos[0];
+    auto &fbo       = fbos[0];
 
     gfx::DispatchInfo dispatchInfo{(VERTEX_COUNT - 1) / GROUP_SIZE + 1, 1, 1};
     gfx::DispatchInfo bgDispatchInfo{(BG_WIDTH - 1) / bgGroupSizeX + 1, (BG_HEIGHT - 1) / bgGroupSizeY + 1, 1};

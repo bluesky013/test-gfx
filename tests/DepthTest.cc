@@ -114,21 +114,21 @@ struct DepthResolveFramebuffer {
     }
 
     void destroy() {
-        CC_SAFE_DESTROY_AND_DELETE(framebuffer);
-        CC_SAFE_DESTROY_AND_DELETE(depthStencilTexView);
-        CC_SAFE_DESTROY_AND_DELETE(depthStencilTex);
-        CC_SAFE_DESTROY_AND_DELETE(depthStencilTexMSAA);
-        CC_SAFE_DESTROY_AND_DELETE(renderPass);
+        framebuffer         = nullptr;
+        depthStencilTexView = nullptr;
+        depthStencilTex     = nullptr;
+        depthStencilTexMSAA = nullptr;
+        renderPass          = nullptr;
     }
 
     const uint lodLevel  = 4;
     gfx::Rect  bunnyArea = gfx::Rect{0, 0, 0, 0};
 
-    gfx::RenderPass * renderPass          = nullptr;
-    gfx::Texture *    depthStencilTexMSAA = nullptr;
-    gfx::Texture *    depthStencilTex     = nullptr;
-    gfx::Texture *    depthStencilTexView = nullptr;
-    gfx::Framebuffer *framebuffer         = nullptr;
+    IntrusivePtr<gfx::RenderPass>  renderPass;
+    IntrusivePtr<gfx::Texture>     depthStencilTexMSAA;
+    IntrusivePtr<gfx::Texture>     depthStencilTex;
+    IntrusivePtr<gfx::Texture>     depthStencilTexView;
+    IntrusivePtr<gfx::Framebuffer> framebuffer;
 };
 
 struct BigTriangle : public cc::CCObject {
@@ -312,7 +312,7 @@ struct BigTriangle : public cc::CCObject {
         descriptorSet = device->createDescriptorSet({descriptorSetLayout});
 
         gfx::SamplerInfo samplerInfo;
-        auto *           sampler = device->getSampler(samplerInfo);
+        auto            *sampler = device->getSampler(samplerInfo);
 
         descriptorSet->bindBuffer(0, nearFarUniformBuffer);
         descriptorSet->bindSampler(1, sampler);
@@ -332,29 +332,29 @@ struct BigTriangle : public cc::CCObject {
     }
 
     bool destroy() override {
-        CC_SAFE_DESTROY_AND_DELETE(shader);
-        CC_SAFE_DESTROY_AND_DELETE(vertexBuffer);
-        CC_SAFE_DESTROY_AND_DELETE(inputAssembler);
-        CC_SAFE_DESTROY_AND_DELETE(descriptorSet);
-        CC_SAFE_DESTROY_AND_DELETE(descriptorSetLayout);
-        CC_SAFE_DESTROY_AND_DELETE(pipelineLayout);
-        CC_SAFE_DESTROY_AND_DELETE(texture);
-        CC_SAFE_DESTROY_AND_DELETE(pipelineState);
-        CC_SAFE_DESTROY_AND_DELETE(nearFarUniformBuffer);
+        shader               = nullptr;
+        vertexBuffer         = nullptr;
+        inputAssembler       = nullptr;
+        descriptorSet        = nullptr;
+        descriptorSetLayout  = nullptr;
+        pipelineLayout       = nullptr;
+        texture              = nullptr;
+        pipelineState        = nullptr;
+        nearFarUniformBuffer = nullptr;
         return true;
     }
 
-    gfx::Shader *             shader               = nullptr;
-    gfx::Framebuffer *        fbo                  = nullptr;
-    gfx::Buffer *             vertexBuffer         = nullptr;
-    gfx::Buffer *             nearFarUniformBuffer = nullptr;
-    gfx::Device *             device               = nullptr;
-    gfx::InputAssembler *     inputAssembler       = nullptr;
-    gfx::DescriptorSet *      descriptorSet        = nullptr;
-    gfx::DescriptorSetLayout *descriptorSetLayout  = nullptr;
-    gfx::PipelineLayout *     pipelineLayout       = nullptr;
-    gfx::Texture *            texture              = nullptr;
-    gfx::PipelineState *      pipelineState        = nullptr;
+    IntrusivePtr<gfx::Shader>              shader;
+    IntrusivePtr<gfx::Framebuffer>         fbo;
+    IntrusivePtr<gfx::Buffer>              vertexBuffer;
+    IntrusivePtr<gfx::Buffer>              nearFarUniformBuffer;
+    IntrusivePtr<gfx::Device>              device;
+    IntrusivePtr<gfx::InputAssembler>      inputAssembler;
+    IntrusivePtr<gfx::DescriptorSet>       descriptorSet;
+    IntrusivePtr<gfx::DescriptorSetLayout> descriptorSetLayout;
+    IntrusivePtr<gfx::PipelineLayout>      pipelineLayout;
+    IntrusivePtr<gfx::Texture>             texture;
+    IntrusivePtr<gfx::PipelineState>       pipelineState;
 };
 
 struct Bunny : public cc::CCObject {
@@ -468,7 +468,7 @@ struct Bunny : public cc::CCObject {
         vertexBuffer->update(positions.data(), positions.size() * sizeof(float));
 
         // index buffer
-        const auto &     indicesInfo = obj.GetShapes()[0].mesh.indices;
+        const auto             &indicesInfo = obj.GetShapes()[0].mesh.indices;
         ccstd::vector<uint16_t> indices;
         indices.reserve(indicesInfo.size());
         std::transform(indicesInfo.begin(), indicesInfo.end(), std::back_inserter(indices),
@@ -529,32 +529,32 @@ struct Bunny : public cc::CCObject {
     }
 
     bool destroy() override {
-        CC_SAFE_DESTROY_AND_DELETE(shader);
-        CC_SAFE_DESTROY_AND_DELETE(vertexBuffer);
-        CC_SAFE_DESTROY_AND_DELETE(indexBuffer);
-        CC_SAFE_DESTROY_AND_DELETE(depthTexture);
-        CC_SAFE_DESTROY_AND_DELETE(inputAssembler);
+        shader         = nullptr;
+        vertexBuffer   = nullptr;
+        indexBuffer    = nullptr;
+        depthTexture   = nullptr;
+        inputAssembler = nullptr;
         for (uint i = 0; i < BUNNY_NUM; i++) {
-            CC_SAFE_DESTROY_AND_DELETE(mvpUniformBuffer[i]);
-            CC_SAFE_DESTROY_AND_DELETE(descriptorSet[i]);
+            mvpUniformBuffer[i] = nullptr;
+            descriptorSet[i]    = nullptr;
         }
-        CC_SAFE_DESTROY_AND_DELETE(descriptorSetLayout);
-        CC_SAFE_DESTROY_AND_DELETE(pipelineLayout);
-        CC_SAFE_DESTROY_AND_DELETE(pipelineState);
+        descriptorSetLayout = nullptr;
+        pipelineLayout      = nullptr;
+        pipelineState       = nullptr;
         return true;
     }
-    const static uint         BUNNY_NUM                   = 2;
-    gfx::Device *             device                      = nullptr;
-    gfx::Shader *             shader                      = nullptr;
-    gfx::Buffer *             vertexBuffer                = nullptr;
-    gfx::Buffer *             indexBuffer                 = nullptr;
-    gfx::Texture *            depthTexture                = nullptr;
-    gfx::InputAssembler *     inputAssembler              = nullptr;
-    gfx::DescriptorSetLayout *descriptorSetLayout         = nullptr;
-    gfx::PipelineLayout *     pipelineLayout              = nullptr;
-    gfx::Buffer *             mvpUniformBuffer[BUNNY_NUM] = {nullptr, nullptr};
-    gfx::DescriptorSet *      descriptorSet[BUNNY_NUM]    = {nullptr, nullptr};
-    gfx::PipelineState *      pipelineState               = nullptr;
+    const static uint                      BUNNY_NUM = 2;
+    IntrusivePtr<gfx::Device>              device;
+    IntrusivePtr<gfx::Shader>              shader;
+    IntrusivePtr<gfx::Buffer>              vertexBuffer;
+    IntrusivePtr<gfx::Buffer>              indexBuffer;
+    IntrusivePtr<gfx::Texture>             depthTexture;
+    IntrusivePtr<gfx::InputAssembler>      inputAssembler;
+    IntrusivePtr<gfx::DescriptorSetLayout> descriptorSetLayout;
+    IntrusivePtr<gfx::PipelineLayout>      pipelineLayout;
+    IntrusivePtr<gfx::Buffer>              mvpUniformBuffer[BUNNY_NUM] = {nullptr, nullptr};
+    IntrusivePtr<gfx::DescriptorSet>       descriptorSet[BUNNY_NUM]    = {nullptr, nullptr};
+    IntrusivePtr<gfx::PipelineState>       pipelineState;
 };
 
 BigTriangle *            bg{nullptr};
@@ -574,7 +574,7 @@ void DepthTexture::onResize(gfx::Swapchain *swapchain) {
 
 bool DepthTexture::onInit() {
     auto *swapchain = swapchains[0];
-    auto *fbo       = fbos[0];
+    auto &fbo       = fbos[0];
 
     bunnyFBO = ccnew DepthResolveFramebuffer(device, swapchain);
     bunny    = ccnew Bunny(device, bunnyFBO->framebuffer);
@@ -606,7 +606,7 @@ bool DepthTexture::onInit() {
 
 void DepthTexture::onTick() {
     auto *swapchain = swapchains[0];
-    auto *fbo       = fbos[0];
+    auto &fbo       = fbos[0];
 
     uint generalBarrierIdx = _frameCount ? 1 : 0;
 

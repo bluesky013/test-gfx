@@ -143,7 +143,7 @@ void SubpassTest::onTick() {
 
     for (size_t i = 0; i < swapchains.size(); ++i) {
         auto *    swapchain = swapchains[i];
-        auto *    fbo       = fbos[i];
+        auto &    fbo       = fbos[i];
         gfx::Rect renderArea{0, 0, swapchain->getWidth(), swapchain->getHeight()};
 
         if (_useDeferred) {

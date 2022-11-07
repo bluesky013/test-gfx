@@ -15,13 +15,13 @@ public:
     void draw(gfx::CommandBuffer *commandBuffer);
 
 private:
-    gfx::Shader *             _shader{nullptr};
-    gfx::Buffer *             _vertexBuffer{nullptr};
-    gfx::InputAssembler *     _inputAssembler{nullptr};
-    gfx::DescriptorSetLayout *_descriptorSetLayout{nullptr};
-    gfx::PipelineLayout *     _pipelineLayout{nullptr};
-    gfx::PipelineState *      _pipelineState{nullptr};
-    gfx::DescriptorSet *      _descriptorSet{nullptr};
+    IntrusivePtr<gfx::Shader>              _shader;
+    IntrusivePtr<gfx::InputAssembler>      _inputAssembler;
+    IntrusivePtr<gfx::DescriptorSetLayout> _descriptorSetLayout;
+    IntrusivePtr<gfx::PipelineLayout>      _pipelineLayout;
+    IntrusivePtr<gfx::PipelineState>       _pipelineState;
+    IntrusivePtr<gfx::DescriptorSet>       _descriptorSet;
+    IntrusivePtr<gfx::Buffer>              _vertexBuffer;
 };
 
 } // namespace cc

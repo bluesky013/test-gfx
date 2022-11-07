@@ -20,16 +20,16 @@ private:
     void createInputAssembler();
     void createPipelineState();
 
-    const static uint         BINDING_COUNT                 = 2;
-    const static uint         PIPELIE_COUNT                 = 6;
-    gfx::Shader *             _shader                       = nullptr;
-    gfx::Buffer *             _vertexBuffer                 = nullptr;
-    gfx::InputAssembler *     _inputAssembler               = nullptr;
-    gfx::Buffer *             _uniformBuffer[BINDING_COUNT] = {nullptr};
-    gfx::DescriptorSet *      _descriptorSet[BINDING_COUNT] = {nullptr};
-    gfx::DescriptorSetLayout *_descriptorSetLayout          = nullptr;
-    gfx::PipelineLayout *     _pipelineLayout               = nullptr;
-    gfx::PipelineState *      _pipelineState[PIPELIE_COUNT] = {nullptr};
+    const static uint                      BINDING_COUNT = 2;
+    const static uint                      PIPELIE_COUNT = 6;
+    IntrusivePtr<gfx::Shader>              _shader;
+    IntrusivePtr<gfx::Buffer>              _vertexBuffer;
+    IntrusivePtr<gfx::InputAssembler>      _inputAssembler;
+    IntrusivePtr<gfx::Buffer>              _uniformBuffer[BINDING_COUNT] = {nullptr};
+    IntrusivePtr<gfx::DescriptorSet>       _descriptorSet[BINDING_COUNT] = {nullptr};
+    IntrusivePtr<gfx::DescriptorSetLayout> _descriptorSetLayout;
+    IntrusivePtr<gfx::PipelineLayout>      _pipelineLayout;
+    IntrusivePtr<gfx::PipelineState>       _pipelineState[PIPELIE_COUNT] = {nullptr};
 
     struct MatrixUBO {
         Mat4 world;

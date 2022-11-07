@@ -276,7 +276,15 @@ void TransientPoolTest::onTick() {
 
     // compute pass
     _computePass1->execute(commandBuffer);
-    _computePass2->execute(commandBuffer);
+    {
+        std::vector<gfx::Texture *>        textures        = {_textureMap[TextureId::STORAGE_PARTICLE_IMAGE]};
+        std::vector<gfx::TextureBarrier *> textureBarriers = {device->getTextureBarrier({
+            gfx::AccessFlagBit::NONE,
+            gfx::AccessFlagBit::COMPUTE_SHADER_WRITE,
+        })};
+        commandBuffer->pipelineBarrier(nullptr, {}, {}, textureBarriers, textures);
+        _computePass2->execute(commandBuffer);
+    }
 
     // color pass
     {
@@ -284,11 +292,13 @@ void TransientPoolTest::onTick() {
         std::vector<gfx::Texture *>        textures        = {_textureMap[TextureId::STORAGE_PARTICLE_IMAGE]};
         std::vector<gfx::TextureBarrier *> textureBarriers = {device->getTextureBarrier({
             gfx::AccessFlagBit::COMPUTE_SHADER_WRITE,
-            gfx::AccessFlagBit::FRAGMENT_SHADER_READ_TEXTURE,
+            gfx::AccessFlagBit::FRAGMENT_SHADER_READ_OTHER,
         })};
         std::vector<gfx::BufferBarrier *>  bufferBarriers  = {device->getBufferBarrier({
             gfx::AccessFlagBit::COMPUTE_SHADER_WRITE,
             gfx::AccessFlagBit::VERTEX_BUFFER,
+            gfx::BarrierType::FULL,
+            0, _particleSystem->particleRenderBuffer->getSize()
         })};
         commandBuffer->pipelineBarrier(nullptr, bufferBarriers, buffers, textureBarriers, textures);
 
@@ -510,7 +520,7 @@ void TransientPoolTest::updateTransientResourceParticleStorageTexture() {
     textureInfo.format = gfx::Format::RGBA8;
     textureInfo.width = IMAGE_EXTENT;
     textureInfo.height = IMAGE_EXTENT;
-    textureInfo.flags |= gfx::TextureFlagBit::TRANSIENT;
+    textureInfo.flags = gfx::TextureFlagBit::GENERAL_LAYOUT | gfx::TextureFlagBit::TRANSIENT;
     _textureMap[TextureId::STORAGE_PARTICLE_IMAGE] = _transientPool->requestTexture(textureInfo);
 
     _computePass2->set->bindBuffer(0, _ubo);
@@ -650,18 +660,19 @@ void TransientPoolTest::prepareBlurPass() {
     _blurGroup.set            = device->createDescriptorSet({setLayout});
 
     gfx::InputAssemblerInfo assemblerInfo = {};
-    auto                   *ia            = device->createInputAssembler(assemblerInfo);
+
+    auto *ia                 = device->createInputAssembler(assemblerInfo);
     _blurGroup.blurPassV->ia = _blurGroup.blurPassH->ia = ia;
 
     gfx::RenderPassInfo renderPassInfo;
     renderPassInfo.colorAttachments.emplace_back().format = swapChain->getColorTexture()->getFormat();
-    auto *renderPass                                      = device->createRenderPass(renderPassInfo);
-    _blurGroup.blurPassV->renderPass = _blurGroup.blurPassH->renderPass = renderPass;
+    auto *pass                                            = device->createRenderPass(renderPassInfo);
+    _blurGroup.blurPassV->renderPass = _blurGroup.blurPassH->renderPass = pass;
 
     gfx::PipelineStateInfo pipelineInfo       = {};
     pipelineInfo.primitive                    = gfx::PrimitiveMode::TRIANGLE_LIST;
     pipelineInfo.inputState                   = {{}};
-    pipelineInfo.renderPass                   = renderPass;
+    pipelineInfo.renderPass                   = pass;
     pipelineInfo.rasterizerState.cullMode     = gfx::CullMode::NONE;
     pipelineInfo.depthStencilState.depthWrite = false;
     pipelineInfo.depthStencilState.depthTest  = false;
@@ -740,7 +751,7 @@ void FullscreenPass::execute(gfx::CommandBuffer *commandBuffer, std::function<vo
                                    clearStencil);
 
     commandBuffer->bindPipelineState(pipeline);
-    commandBuffer->bindInputAssembler(ia);
+//    commandBuffer->bindInputAssembler(ia);
 
     if (func) {
         func(commandBuffer);

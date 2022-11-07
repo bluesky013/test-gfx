@@ -4,19 +4,16 @@
 namespace cc {
 
 void BasicTexture::onDestroy() {
-    CC_SAFE_DESTROY_AND_DELETE(_shader);
-    for (auto *view : _textureViews) {
-        CC_SAFE_DESTROY_AND_DELETE(view);
-    }
+    _shader              = nullptr;
+    _inputAssembler      = nullptr;
+    _descriptorSet       = nullptr;
+    _descriptorSetLayout = nullptr;
+    _pipelineLayout      = nullptr;
+    _pipelineState       = nullptr;
+    _vertexBuffer        = nullptr;
+    _uniformBuffer       = nullptr;
     _textureViews.clear();
-    CC_SAFE_DESTROY_AND_DELETE(_vertexBuffer);
-    CC_SAFE_DESTROY_AND_DELETE(_inputAssembler);
-    CC_SAFE_DESTROY_AND_DELETE(_descriptorSet);
-    CC_SAFE_DESTROY_AND_DELETE(_descriptorSetLayout);
-    CC_SAFE_DESTROY_AND_DELETE(_pipelineLayout);
-    CC_SAFE_DESTROY_AND_DELETE(_pipelineState);
-    CC_SAFE_DESTROY_AND_DELETE(_uniformBuffer);
-}
+};
 
 bool BasicTexture::onInit() {
     _oldTime = static_cast<uint32_t>(_time);
@@ -267,7 +264,7 @@ void BasicTexture::createPipeline() {
 
 void BasicTexture::onTick() {
     auto *swapchain = swapchains[0];
-    auto *fbo       = fbos[0];
+    auto &fbo       = fbos[0];
 
     if (static_cast<uint32_t>(_time) > _oldTime) {
         _oldTime = static_cast<uint32_t>(_time);

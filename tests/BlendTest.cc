@@ -24,18 +24,18 @@ struct Quad : public cc::CCObject {
     ~Quad() override = default;
 
     bool destroy() override {
-        CC_SAFE_DESTROY_AND_DELETE(shader);
-        CC_SAFE_DESTROY_AND_DELETE(vertexBuffer);
-        CC_SAFE_DESTROY_AND_DELETE(inputAssembler);
-        CC_SAFE_DESTROY_AND_DELETE(indexBuffer);
-        CC_SAFE_DESTROY_AND_DELETE(texture);
-        CC_SAFE_DESTROY_AND_DELETE(descriptorSet);
-        CC_SAFE_DESTROY_AND_DELETE(uniformBufferView);
-        CC_SAFE_DESTROY_AND_DELETE(uniformBuffer);
-        CC_SAFE_DESTROY_AND_DELETE(descriptorSetLayout);
-        CC_SAFE_DESTROY_AND_DELETE(pipelineLayout);
-        for (auto &i : pipelineState) {
-            CC_SAFE_DESTROY_AND_DELETE(i);
+        shader              = nullptr;
+        inputAssembler      = nullptr;
+        texture             = nullptr;
+        descriptorSet       = nullptr;
+        descriptorSetLayout = nullptr;
+        pipelineLayout      = nullptr;
+        vertexBuffer        = nullptr;
+        indexBuffer         = nullptr;
+        uniformBufferView   = nullptr;
+        uniformBuffer       = nullptr;
+        for (auto &pipeline : pipelineState) {
+            pipeline = nullptr;
         }
         return true;
     }
@@ -314,23 +314,23 @@ struct Quad : public cc::CCObject {
         pipelineState[MULTIPLY_BLEND]                                    = device->createPipelineState(pipelineInfo[MULTIPLY_BLEND]);
     }
 
-    gfx::Device *             device                     = nullptr;
-    gfx::Framebuffer *        fbo                        = nullptr;
-    gfx::Shader *             shader                     = nullptr;
-    gfx::Buffer *             vertexBuffer               = nullptr;
-    gfx::Buffer *             indexBuffer                = nullptr;
-    gfx::InputAssembler *     inputAssembler             = nullptr;
-    gfx::Texture *            texture                    = nullptr;
-    gfx::DescriptorSetLayout *descriptorSetLayout        = nullptr;
-    gfx::PipelineLayout *     pipelineLayout             = nullptr;
-    gfx::Buffer *             uniformBuffer              = nullptr;
-    gfx::Buffer *             uniformBufferView          = nullptr;
-    gfx::DescriptorSet *      descriptorSet              = nullptr;
-    gfx::PipelineState *      pipelineState[TOTAL_BLEND] = {nullptr};
-    uint                      dynamicOffsets[TOTAL_BLEND];
+    IntrusivePtr<gfx::Device>              device;
+    IntrusivePtr<gfx::Framebuffer>         fbo;
+    IntrusivePtr<gfx::Shader>              shader;
+    IntrusivePtr<gfx::InputAssembler>      inputAssembler;
+    IntrusivePtr<gfx::Texture>             texture;
+    IntrusivePtr<gfx::DescriptorSetLayout> descriptorSetLayout;
+    IntrusivePtr<gfx::PipelineLayout>      pipelineLayout;
+    IntrusivePtr<gfx::DescriptorSet>       descriptorSet;
+    IntrusivePtr<gfx::PipelineState>       pipelineState[TOTAL_BLEND] = {nullptr};
+    IntrusivePtr<gfx::Buffer>              vertexBuffer;
+    IntrusivePtr<gfx::Buffer>              indexBuffer;
+    IntrusivePtr<gfx::Buffer>              uniformBuffer;
+    IntrusivePtr<gfx::Buffer>              uniformBufferView;
+    uint                                   dynamicOffsets[TOTAL_BLEND];
 
     ccstd::vector<float> models;
-    uint          uboStride;
+    uint                 uboStride;
 };
 
 struct BigTriangle : public cc::CCObject {
@@ -343,15 +343,15 @@ struct BigTriangle : public cc::CCObject {
     }
 
     bool destroy() override {
-        CC_SAFE_DESTROY_AND_DELETE(shader);
-        CC_SAFE_DESTROY_AND_DELETE(vertexBuffer);
-        CC_SAFE_DESTROY_AND_DELETE(inputAssembler);
-        CC_SAFE_DESTROY_AND_DELETE(descriptorSet);
-        CC_SAFE_DESTROY_AND_DELETE(descriptorSetLayout);
-        CC_SAFE_DESTROY_AND_DELETE(pipelineLayout);
-        CC_SAFE_DESTROY_AND_DELETE(pipelineState);
-        CC_SAFE_DESTROY_AND_DELETE(timeBuffer);
-        CC_SAFE_DESTROY_AND_DELETE(texture);
+        shader              = nullptr;
+        inputAssembler      = nullptr;
+        descriptorSet       = nullptr;
+        descriptorSetLayout = nullptr;
+        pipelineLayout      = nullptr;
+        pipelineState       = nullptr;
+        texture             = nullptr;
+        vertexBuffer        = nullptr;
+        timeBuffer          = nullptr;
         return true;
     }
 
@@ -531,17 +531,17 @@ struct BigTriangle : public cc::CCObject {
         pipelineState = device->createPipelineState(pipelineInfo);
     }
 
-    gfx::Device *             device              = nullptr;
-    gfx::Framebuffer *        fbo                 = nullptr;
-    gfx::Shader *             shader              = nullptr;
-    gfx::Buffer *             vertexBuffer        = nullptr;
-    gfx::Buffer *             timeBuffer          = nullptr;
-    gfx::InputAssembler *     inputAssembler      = nullptr;
-    gfx::Texture *            texture             = nullptr;
-    gfx::DescriptorSet *      descriptorSet       = nullptr;
-    gfx::DescriptorSetLayout *descriptorSetLayout = nullptr;
-    gfx::PipelineLayout *     pipelineLayout      = nullptr;
-    gfx::PipelineState *      pipelineState       = nullptr;
+    IntrusivePtr<gfx::Device>              device;
+    IntrusivePtr<gfx::Framebuffer>         fbo;
+    IntrusivePtr<gfx::Shader>              shader;
+    IntrusivePtr<gfx::Buffer>              vertexBuffer;
+    IntrusivePtr<gfx::Buffer>              timeBuffer;
+    IntrusivePtr<gfx::InputAssembler>      inputAssembler;
+    IntrusivePtr<gfx::Texture>             texture;
+    IntrusivePtr<gfx::DescriptorSet>       descriptorSet;
+    IntrusivePtr<gfx::DescriptorSetLayout> descriptorSetLayout;
+    IntrusivePtr<gfx::PipelineLayout>      pipelineLayout;
+    IntrusivePtr<gfx::PipelineState>       pipelineState;
 };
 
 void createModelTransform(Mat4 &model, const Vec3 &t, const Vec3 &s) {
@@ -565,7 +565,7 @@ void BlendTest::onDestroy() {
 }
 
 bool BlendTest::onInit() {
-    auto *fbo = fbos[0];
+    auto &fbo       = fbos[0];
 
     bigTriangle = ccnew BigTriangle(device, fbo);
     quad        = ccnew Quad(device, fbo);
@@ -598,7 +598,7 @@ bool BlendTest::onInit() {
 
 void BlendTest::onTick() {
     auto *swapchain = swapchains[0];
-    auto *fbo       = fbos[0];
+    auto &fbo       = fbos[0];
 
     uint generalBarrierIdx = _frameCount ? 1 : 0;
 

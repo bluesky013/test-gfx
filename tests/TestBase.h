@@ -3,12 +3,14 @@
 #include "base/std/container/string.h"
 #include "base/std/container/vector.h"
 #include "core/data/Object.h"
+#include "core/event/EventBus.h"
 #include "math/Mat4.h"
 #include "math/Vec4.h"
 #include "platform/Image.h"
 #include "renderer/frame-graph/FrameGraph.h"
 #include "renderer/gfx-base/GFXDef.h"
 #include "renderer/gfx-base/GFXDevice.h"
+#include "engine/EngineEvents.h"
 
 #include <algorithm>
 #include <iterator>
@@ -248,6 +250,9 @@ protected:
 
     float _time       = 0.F;
     uint  _frameCount = 0U;
+
+    events::WindowDestroy::Listener _windowDestroyListener;
+    events::WindowRecreated::Listener _windowRecreatedListener;
 
     friend class Root;
 };

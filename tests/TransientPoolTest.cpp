@@ -17,6 +17,11 @@ gfx::AttributeList STANDARD_VERTEX_ATTRIBUTES{
     {"inPos", gfx::Format::RGBA32F, false, 0, true, 0},
 };
 
+static constexpr uint32_t COMPUTE_PASS1_ID  = 1;
+static constexpr uint32_t COMPUTE_PASS2_ID  = 2;
+static constexpr uint32_t COLOR_PASS_ID     = 3;
+static constexpr uint32_t BLUR_PASS_ID      = 4;
+static constexpr uint32_t COMPOSITE_PASS_ID = 5;
 template <typename T>
 static gfx::Buffer *createBuffer(gfx::Device *device, const std::vector<T> &data, gfx::BufferUsage usage, uint32_t stride) {
     uint32_t size   = static_cast<uint32_t>(data.size() * sizeof(T));
@@ -40,16 +45,6 @@ static gfx::Buffer *createBuffer(gfx::Device *device, gfx::BufferUsage usage, gf
 
     auto buffer = device->createBuffer(bufferInfo);
     return buffer;
-}
-
-static gfx::Buffer *createTransientBuffer(gfx::TransientPool *pool, gfx::BufferUsage usage, gfx::MemoryUsage mem, uint32_t size, uint32_t stride) {
-    gfx::BufferInfo bufferInfo = {};
-    bufferInfo.usage = usage;
-    bufferInfo.memUsage = mem;
-    bufferInfo.size = size;
-    bufferInfo.stride = stride;
-    bufferInfo.flags = gfx::BufferFlagBit::TRANSIENT;
-    return pool->requestBuffer(bufferInfo);
 }
 
 static constexpr uint32_t IMAGE_LOCAL_GROUP = 32;
@@ -214,7 +209,7 @@ const std::string CS2 = StringUtil::format(R"(
         float v2 = u + 4 * v - 1;
         bool val = v1 <= 0 && v2 <= 0;
         float timeScale = sin(time * 5.0) / 2.0 + 1.0;
-        vec4 color = val ? vec4(0, timeScale, 0, 1) : vec4(0, 0, 0, 0);
+        vec4 color = val ? vec4(timeScale) * vec4(0.886, 0.345, 0.255, 1) : vec4(0, 0, 0, 0);
         imageStore(resultImage, ivec2(gl_GlobalInvocationID.xy), color);
     })", IMAGE_LOCAL_GROUP, IMAGE_EXTENT);
 
@@ -263,6 +258,7 @@ void TransientPoolTest::onTick() {
     //                                 0.01F, 1000.0F, &matrices, swapchain);
 
     device->acquire(&swapchain, 1);
+    _transientPool->beginFrame();
 
     auto *commandBuffer = commandBuffers[0];
     commandBuffer->begin();
@@ -274,8 +270,14 @@ void TransientPoolTest::onTick() {
         updateTransientResourceBlurImage();
     }
 
-    // compute pass
-    _computePass1->execute(commandBuffer);
+    // compute pass1
+    {
+        _transientPool->frontBarrier(COMPUTE_PASS1_ID, commandBuffer);
+        _computePass1->execute(commandBuffer);
+        _transientPool->rearBarrier(COMPUTE_PASS1_ID, commandBuffer);
+    }
+
+    // compute pass2
     {
         std::vector<gfx::Texture *>        textures        = {_textureMap[TextureId::STORAGE_PARTICLE_IMAGE]};
         std::vector<gfx::TextureBarrier *> textureBarriers = {device->getTextureBarrier({
@@ -283,7 +285,9 @@ void TransientPoolTest::onTick() {
             gfx::AccessFlagBit::COMPUTE_SHADER_WRITE,
         })};
         commandBuffer->pipelineBarrier(nullptr, {}, {}, textureBarriers, textures);
+        _transientPool->frontBarrier(COMPUTE_PASS2_ID, commandBuffer);
         _computePass2->execute(commandBuffer);
+        _transientPool->rearBarrier(COMPUTE_PASS2_ID, commandBuffer);
     }
 
     // color pass
@@ -315,15 +319,19 @@ void TransientPoolTest::onTick() {
             _particleSystem->ia = device->createInputAssembler(inputAssemblerInfo);
         }
 
+        _transientPool->frontBarrier(COLOR_PASS_ID, commandBuffer);
         _colorPass->execute(commandBuffer, [this](gfx::CommandBuffer *commandBuffer) {
             _particleSystem->execute(commandBuffer);
         });
+        _transientPool->rearBarrier(COLOR_PASS_ID, commandBuffer);
     }
 
     // blur pass
     {
         gfx::Texture   *tex[2]  = {_textureMap[TextureId::BLUR_IMAGE0], _textureMap[TextureId::BLUR_IMAGE1]};
         FullscreenPass *pass[2] = {_blurGroup.blurPassH.get(), _blurGroup.blurPassV.get()};
+
+        _transientPool->frontBarrier(BLUR_PASS_ID, commandBuffer);
         for (uint32_t i = 0; i < 10; ++i) {
             gfx::Texture *input  = i == 0 ? _textureMap[TextureId::COLOR_PASS_IMAGE1].get() : tex[(i - 1) % 2];
             gfx::Texture *output = tex[i % 2];
@@ -349,6 +357,7 @@ void TransientPoolTest::onTick() {
                 pass[i % 2]->execute(commandBuffer, {});
             }
         }
+        _transientPool->rearBarrier(BLUR_PASS_ID, commandBuffer);
     }
 
     // composite
@@ -372,13 +381,17 @@ void TransientPoolTest::onTick() {
         _presentPass->set->bindSampler(1, _sampler);
         _presentPass->set->update();
 
+        _transientPool->frontBarrier(COMPOSITE_PASS_ID, commandBuffer);
         _presentPass->execute(commandBuffer, {});
+        _transientPool->rearBarrier(COMPOSITE_PASS_ID, commandBuffer);
     }
     commandBuffer->end();
 
     device->flushCommands(commandBuffers);
     device->getQueue()->submit(commandBuffers);
     device->present();
+
+    _transientPool->endFrame();
 }
 
 void TransientPoolTest::onDestroy() {
@@ -502,11 +515,14 @@ void TransientPoolTest::prepareComputePass1() {
 }
 
 void TransientPoolTest::updateTransientResourceParticleRenderBuffer() {
-    _particleSystem->particleRenderBuffer = createTransientBuffer(_transientPool,
-                                                         gfx::BufferUsageBit::STORAGE | gfx::BufferUsageBit::VERTEX,
-                                                         gfx::MemoryUsageBit::DEVICE,
-                                                         POOL_SIZE * sizeof(ParticleRenderData),
-                                                         sizeof(ParticleRenderData));
+    gfx::BufferInfo bufferInfo = {};
+    bufferInfo.usage = gfx::BufferUsageBit::STORAGE | gfx::BufferUsageBit::VERTEX,
+    bufferInfo.memUsage = gfx::MemoryUsageBit::DEVICE;
+    bufferInfo.size = POOL_SIZE * sizeof(ParticleRenderData);
+    bufferInfo.stride = sizeof(ParticleRenderData);
+    bufferInfo.flags = gfx::BufferFlagBit::TRANSIENT;
+
+    _particleSystem->particleRenderBuffer = _transientPool->requestBuffer(bufferInfo, COMPUTE_PASS1_ID, gfx::AccessFlagBit::COMPUTE_SHADER_WRITE);
 
     _computePass1->set->bindBuffer(0, _ubo);
     _computePass1->set->bindBuffer(1, _particleSystem->particleBuffer);
@@ -521,7 +537,7 @@ void TransientPoolTest::updateTransientResourceParticleStorageTexture() {
     textureInfo.width = IMAGE_EXTENT;
     textureInfo.height = IMAGE_EXTENT;
     textureInfo.flags = gfx::TextureFlagBit::GENERAL_LAYOUT | gfx::TextureFlagBit::TRANSIENT;
-    _textureMap[TextureId::STORAGE_PARTICLE_IMAGE] = _transientPool->requestTexture(textureInfo);
+    _textureMap[TextureId::STORAGE_PARTICLE_IMAGE] = _transientPool->requestTexture(textureInfo, COMPUTE_PASS2_ID, gfx::AccessFlagBit::COMPUTE_SHADER_WRITE);
 
     _computePass2->set->bindBuffer(0, _ubo);
     _computePass2->set->bindTexture(1, _textureMap[TextureId::STORAGE_PARTICLE_IMAGE]);
@@ -530,8 +546,8 @@ void TransientPoolTest::updateTransientResourceParticleStorageTexture() {
 }
 
 void TransientPoolTest::updateTransientResourceBlurImage() {
-    _transientPool->resetBuffer(_particleSystem->particleRenderBuffer);
-    _transientPool->resetTexture(_textureMap[TextureId::STORAGE_PARTICLE_IMAGE]);
+    _transientPool->resetBuffer(_particleSystem->particleRenderBuffer, COLOR_PASS_ID, gfx::AccessFlagBit::VERTEX_BUFFER);
+    _transientPool->resetTexture(_textureMap[TextureId::STORAGE_PARTICLE_IMAGE], COLOR_PASS_ID, gfx::AccessFlagBit::FRAGMENT_SHADER_READ_TEXTURE);
 
     auto *swapChain = swapchains[0];
 
@@ -541,8 +557,8 @@ void TransientPoolTest::updateTransientResourceBlurImage() {
     textureInfo.format = swapChain->getColorTexture()->getFormat();
     textureInfo.usage = gfx::TextureUsageBit::COLOR_ATTACHMENT | gfx::TextureUsageBit::SAMPLED;
     textureInfo.flags = gfx::TextureFlagBit::TRANSIENT;
-    _textureMap[TextureId::BLUR_IMAGE0] = _transientPool->requestTexture(textureInfo);
-    _textureMap[TextureId::BLUR_IMAGE1] = _transientPool->requestTexture(textureInfo);
+    _textureMap[TextureId::BLUR_IMAGE0] = _transientPool->requestTexture(textureInfo, BLUR_PASS_ID, gfx::AccessFlagBit::COLOR_ATTACHMENT_WRITE);
+    _textureMap[TextureId::BLUR_IMAGE1] = _transientPool->requestTexture(textureInfo, BLUR_PASS_ID, gfx::AccessFlagBit::COLOR_ATTACHMENT_WRITE);
 
     _blurGroup.set->bindTexture(0, _textureMap[TextureId::COLOR_PASS_IMAGE1]);
     _blurGroup.set->bindSampler(0, _sampler);
@@ -570,8 +586,8 @@ void TransientPoolTest::updateTransientResourceBlurImage() {
         _blurGroup.blurPassV->set->update();
     }
 
-    _transientPool->resetTexture(_textureMap[TextureId::BLUR_IMAGE0]);
-    _transientPool->resetTexture(_textureMap[TextureId::BLUR_IMAGE1]);
+    _transientPool->resetTexture(_textureMap[TextureId::BLUR_IMAGE0], COMPOSITE_PASS_ID, gfx::AccessFlagBit::FRAGMENT_SHADER_READ_TEXTURE);
+    _transientPool->resetTexture(_textureMap[TextureId::BLUR_IMAGE1], COMPOSITE_PASS_ID, gfx::AccessFlagBit::FRAGMENT_SHADER_READ_TEXTURE);
 }
 
 void TransientPoolTest::prepareComputePass2() {

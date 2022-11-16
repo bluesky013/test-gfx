@@ -23,6 +23,10 @@
 #include "tests/StressTest.h"
 #include "tests/SubpassTest.h"
 #include "tests/TransientPoolTest.h"
+#include "tests/NativePipelineTest.h"
+
+#include "interfaces/modules/ISystemWindowManager.h"
+#include "interfaces/modules/ISystemWindow.h"
 
 #include "utils/Math.h"
 
@@ -32,7 +36,7 @@
 #define DEFAULT_MATRIX_MATH
 
 #include "GFXDeviceManager.h"
-#include "bindings/event/CustomEventTypes.h"
+//#include "bindings/event/CustomEventTypes.h"
 #include "bindings/event/EventDispatcher.h"
 
 namespace cc {
@@ -46,6 +50,7 @@ const bool  TestBaseI::MANUAL_BARRIER         = true;
 const float TestBaseI::NANOSECONDS_PER_SECOND = 1000000000.F;
 
 ccstd::vector<TestBaseI::createFunc> TestBaseI::tests = {
+//    NativePipelineTest::create,
     TransientPoolTest::create,
 //    SubpassTest::create,
 //    ScriptTest::create,
@@ -121,17 +126,21 @@ TestBaseI::TestBaseI() {
             fboInfo.renderPass          = renderPass;
             fbos.push_back(device->createFramebuffer(fboInfo));
         }
-        EventDispatcher::addCustomEventListener(EVENT_DESTROY_WINDOW, [](const CustomEvent &e) -> void {
+
+        _windowDestroyListener.bind([this](uint32_t windowId) -> void {
             for (auto *swapchain : swapchains) {
-                if (e.args->ptrVal == swapchain->getWindowHandle()) {
+                if (windowId == swapchain->getWindowId()) {
                     swapchain->destroySurface();
                 }
             }
         });
-        EventDispatcher::addCustomEventListener(EVENT_RECREATE_WINDOW, [](const CustomEvent &e) -> void {
+
+        _windowRecreatedListener.bind([this](uint32_t windowId) -> void {
             for (auto *swapchain : swapchains) {
-                if (!swapchain->getWindowHandle()) {
-                    swapchain->createSurface(e.args->ptrVal);
+                if (swapchain->getWindowId() == windowId) {
+                    auto *windowMgr = BasePlatform::getPlatform()->getInterface<ISystemWindowManager>();
+                    auto *hWnd = reinterpret_cast<void *>(windowMgr->getWindow(windowId)->getWindowHandle());
+                    swapchain->createSurface(hWnd);
                 }
             }
         });
@@ -143,7 +152,7 @@ TestBaseI::TestBaseI() {
 }
 
 void TestBaseI::tickScript() {
-    EventDispatcher::dispatchTickEvent(0.F);
+//    EventDispatcher::dispatchTickEvent(0.F);
 }
 
 void TestBaseI::destroyGlobal() {

@@ -27,12 +27,17 @@ protected:
     std::unique_ptr<gfx::Buffer>         _indexBuffer{nullptr};
     std::unique_ptr<gfx::InputAssembler> _inputAssembler{nullptr};
 
+    IntrusivePtr<gfx::Texture> _color;
+    IntrusivePtr<gfx::Framebuffer> _fb;
+    IntrusivePtr<gfx::RenderPass> _pass;
+
     Mat4 _worldMatrix;
     Mat4 _projectionMatrix;
 
     gfx::Color _clearColor{0.1F, 0.1F, 0.1F, 1.F};
 
-    bool _useDeferred{true};
+    bool _useDeferred{false};
+    bool _capture{false};
 };
 
 } // namespace cc

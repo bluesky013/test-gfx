@@ -632,9 +632,14 @@ void createStandardPipelineResources(gfx::Device *device, StandardForwardPipelin
     out->pipelineState.reset(device->createPipelineState(pipelineStateInfo));
 }
 
-void StandardForwardPipeline::recordCommandBuffer(gfx::Device * /*device*/, gfx::CommandBuffer *commandBuffer, gfx::Framebuffer *framebuffer,
+void StandardForwardPipeline::recordCommandBuffer(gfx::Device * device, gfx::CommandBuffer *commandBuffer, gfx::Framebuffer *framebuffer,
                                                   const gfx::Rect &renderArea, const gfx::Color &clearColor, const std::function<void()> &execute) const {
-    commandBuffer->beginRenderPass(TestBaseI::renderPass, framebuffer, renderArea, &clearColor, 1.0F, 0);
+    recordCommandBuffer(device, commandBuffer, framebuffer, TestBaseI::renderPass, renderArea, clearColor, execute);
+}
+
+void StandardForwardPipeline::recordCommandBuffer(gfx::Device *device, gfx::CommandBuffer *commandBuffer, gfx::Framebuffer *framebuffer, gfx::RenderPass *pass,
+                         const gfx::Rect &renderArea, const gfx::Color &clearColor, const std::function<void()> &execute) const {
+    commandBuffer->beginRenderPass(pass, framebuffer, renderArea, &clearColor, 1.0F, 0);
     commandBuffer->bindPipelineState(pipelineState.get());
 
     execute();

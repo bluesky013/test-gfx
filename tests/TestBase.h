@@ -9,6 +9,7 @@
 #include "renderer/frame-graph/FrameGraph.h"
 #include "renderer/gfx-base/GFXDef.h"
 #include "renderer/gfx-base/GFXDevice.h"
+#include "engine/EngineEvents.h"
 
 #include <algorithm>
 #include <iterator>
@@ -244,6 +245,9 @@ protected:
 
     ccstd::vector<gfx::Texture *>        _textures;
     ccstd::vector<gfx::TextureBarrier *> _textureBarriers;
+
+    events::WindowDestroy::Listener _windowDestroyListener;
+    events::WindowRecreated::Listener _windowRecreatedListener;
 
     float _time       = 0.F;
     uint  _frameCount = 0U;

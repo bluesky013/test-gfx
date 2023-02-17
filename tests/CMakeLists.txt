@@ -9,7 +9,3 @@ file(GLOB GFX_TESTCASE_SOURCE
     ${COCOS_ROOT_PATH}/tests/utils/*.cpp
     ${COCOS_ROOT_PATH}/tests/utils/*.cc
 )
-
-list(APPEND GFX_TESTCASE_HEADER
-    ${COCOS_SRC_PATH}/renderer/GFXDeviceManager.h
-)

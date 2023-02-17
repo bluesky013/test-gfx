@@ -45,6 +45,9 @@ struct StandardForwardPipeline {
 
     void recordCommandBuffer(gfx::Device *device, gfx::CommandBuffer *commandBuffer, gfx::Framebuffer *framebuffer,
                              const gfx::Rect &renderArea, const gfx::Color &clearColor, const std::function<void()> &execute) const;
+
+    void recordCommandBuffer(gfx::Device *device, gfx::CommandBuffer *commandBuffer, gfx::Framebuffer *framebuffer, gfx::RenderPass *pass,
+                             const gfx::Rect &renderArea, const gfx::Color &clearColor, const std::function<void()> &execute) const;
 };
 
 struct StandardDeferredPipeline {

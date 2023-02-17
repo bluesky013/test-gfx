@@ -1,6 +1,9 @@
 #include "SubpassTest.h"
 #include "tiny_obj_loader.h"
 
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include "stb_image_write.h"
+
 namespace cc {
 
 bool SubpassTest::onInit() {
@@ -87,12 +90,31 @@ bool SubpassTest::onInit() {
             gfx::AccessFlagBit::FRAGMENT_SHADER_READ_UNIFORM_BUFFER,
     }));
 
+    gfx::TextureInfo textureInfo = {};
+    textureInfo.format = gfx::Format::RGBA8;
+    textureInfo.width = swapchains[0]->getWidth();
+    textureInfo.height = swapchains[0]->getHeight();
+    textureInfo.usage = gfx::TextureUsageBit::COLOR_ATTACHMENT | gfx::TextureUsageBit::TRANSFER_SRC;
+    _color = device->createTexture(textureInfo);
+
+    gfx::RenderPassInfo renderPassInfo;
+    renderPassInfo.colorAttachments.emplace_back().format = gfx::Format::RGBA8;
+    renderPassInfo.depthStencilAttachment.format          = swapchains[0]->getDepthStencilTexture()->getFormat();
+    _pass = device->createRenderPass(renderPassInfo);
+
+    gfx::FramebufferInfo fbInfo = {};
+    fbInfo.renderPass = _pass;
+    fbInfo.colorTextures.emplace_back(_color);
+    fbInfo.depthStencilTexture = swapchains[0]->getDepthStencilTexture();
+    _fb = device->createFramebuffer(fbInfo);
+
     return true;
 }
 
 void SubpassTest::onSpacePressed() {
-    _useDeferred = !_useDeferred;
-    CC_LOG_INFO("Shading mode switched to: %s", _useDeferred ? "Deferred" : "Forward");
+//    _useDeferred = !_useDeferred;
+//    CC_LOG_INFO("Shading mode switched to: %s", _useDeferred ? "Deferred" : "Forward");
+    _capture = true;
 }
 
 void SubpassTest::onDestroy() {
@@ -109,6 +131,13 @@ void SubpassTest::onDestroy() {
     _inputAssembler.reset();
 }
 
+struct ColorU8 {
+    uint8_t r;
+    uint8_t g;
+    uint8_t b;
+    uint8_t a;
+};
+
 void SubpassTest::onTick() {
     uint  generalBarrierIdx = _frameCount ? 1 : 0;
     auto *commandBuffer    = commandBuffers[0];
@@ -122,7 +151,7 @@ void SubpassTest::onTick() {
 
     for (size_t i = 0; i < swapchains.size(); ++i) {
         auto *swapchain = swapchains[i];
-        Mat4::createRotationY(_time * (i ? -1.F : 1.F), &_worldMatrix);
+//        Mat4::createRotationY(_time * (i ? -1.F : 1.F), &_worldMatrix);
         std::copy(_worldMatrix.m, _worldMatrix.m + 16, _ubos.getBuffer(standard::MVP, i));
 
         gfx::Extent orientedSize = TestBaseI::getOrientedSurfaceSize(swapchain);
@@ -141,24 +170,33 @@ void SubpassTest::onTick() {
 
     fg.reset();
 
-    for (size_t i = 0; i < swapchains.size(); ++i) {
-        auto *    swapchain = swapchains[i];
-        auto *    fbo       = fbos[i];
-        gfx::Rect renderArea{0, 0, swapchain->getWidth(), swapchain->getHeight()};
+    if (!_capture) {
+        for (size_t i = 0; i < swapchains.size(); ++i) {
+            auto     *swapchain = swapchains[i];
+            auto     *fbo       = fbos[i];
+            gfx::Rect renderArea{0, 0, swapchain->getWidth(), swapchain->getHeight()};
 
-        if (_useDeferred) {
-            _deferred.recordCommandBuffer(device, commandBuffer, fbo, renderArea, _clearColor, [=]() {
-                commandBuffer->bindInputAssembler(_inputAssembler.get());
-                _ubos.bindDescriptorSet(commandBuffer, 0, i);
-                commandBuffer->draw(_inputAssembler.get());
-            });
-        } else {
-            _forward.recordCommandBuffer(device, commandBuffer, fbo, renderArea, _clearColor, [=]() {
-                commandBuffer->bindInputAssembler(_inputAssembler.get());
-                _ubos.bindDescriptorSet(commandBuffer, 0, i);
-                commandBuffer->draw(_inputAssembler.get());
-            });
+            if (_useDeferred) {
+                _deferred.recordCommandBuffer(device, commandBuffer, fbo, renderArea, _clearColor, [=]() {
+                    commandBuffer->bindInputAssembler(_inputAssembler.get());
+                    _ubos.bindDescriptorSet(commandBuffer, 0, i);
+                    commandBuffer->draw(_inputAssembler.get());
+                });
+            } else {
+                _forward.recordCommandBuffer(device, commandBuffer, fbo, renderArea, _clearColor, [=]() {
+                    commandBuffer->bindInputAssembler(_inputAssembler.get());
+                    _ubos.bindDescriptorSet(commandBuffer, 0, i);
+                    commandBuffer->draw(_inputAssembler.get());
+                });
+            }
         }
+    } else {
+        gfx::Rect renderArea{0, 0, swapchains[0]->getWidth(), swapchains[0]->getHeight()};
+        _forward.recordCommandBuffer(device, commandBuffer, _fb, _pass, renderArea, _clearColor, [=]() {
+            commandBuffer->bindInputAssembler(_inputAssembler.get());
+            _ubos.bindDescriptorSet(commandBuffer, 0, 0);
+            commandBuffer->draw(_inputAssembler.get());
+        });
     }
 
     fg.compile();
@@ -170,6 +208,37 @@ void SubpassTest::onTick() {
     device->flushCommands(commandBuffers);
     device->getQueue()->submit(commandBuffers);
     device->present();
+
+    if (_capture) {
+        uint32_t w = _color->getWidth();
+        uint32_t h = _color->getHeight();
+        std::unique_ptr<uint8_t[]> data = std::make_unique<uint8_t[]>(w * h * 4);
+        uint8_t *ptr = data.get();
+
+        gfx::BufferTextureCopy copy = {};
+        copy.texExtent.width = w;
+        copy.texExtent.height = h;
+        device->copyTextureToBuffers(_color, &ptr, &copy, 1);
+        if (device->getCapabilities().screenSpaceSignY == -1) {
+            std::unique_ptr<uint8_t[]> data2 = std::make_unique<uint8_t[]>(w * h * 4);
+            ColorU8* src = (ColorU8*)(ptr);
+            ColorU8* dst = (ColorU8*)(data2.get());
+
+            for (uint32_t i = 0; i < h; ++i) {
+                for (uint32_t j = 0; j < w; ++j) {
+                    uint32_t srcI = (h - i - 1) * w + j;
+                    uint32_t dstI = i * w + j;
+                    dst[dstI] = src[srcI];
+                }
+            }
+            stbi_write_png("test.png", w, h, 4, data2.get(), 4 * w);
+            stbi_write_bmp("test.bmp", w, h, 4, data2.get());
+        } else {
+            stbi_write_png("test.png", w, h, 4, ptr, 4 * w);
+            stbi_write_bmp("test.bmp", w, h, 4, ptr);
+        }
+        _capture = false;
+    }
 }
 
 } // namespace cc

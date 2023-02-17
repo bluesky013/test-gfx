@@ -1,4 +1,7 @@
 #include "TestBase.h"
+#include <BasePlatform.h>
+#include <interfaces/modules/ISystemWindowManager.h>
+#include <interfaces/modules/ISystemWindow.h>
 
 #include "base/threading/AutoReleasePool.h"
 #include "base/threading/MessageQueue.h"
@@ -31,7 +34,6 @@
 #define DEFAULT_MATRIX_MATH
 
 #include "GFXDeviceManager.h"
-#include "bindings/event/CustomEventTypes.h"
 #include "bindings/event/EventDispatcher.h"
 
 namespace cc {
@@ -120,17 +122,20 @@ TestBaseI::TestBaseI() {
             fboInfo.renderPass          = renderPass;
             fbos.push_back(device->createFramebuffer(fboInfo));
         }
-        EventDispatcher::addCustomEventListener(EVENT_DESTROY_WINDOW, [](const CustomEvent &e) -> void {
+        _windowDestroyListener.bind([this](uint32_t windowId) -> void {
             for (auto *swapchain : swapchains) {
-                if (e.args->ptrVal == swapchain->getWindowHandle()) {
+                if (windowId == swapchain->getWindowId()) {
                     swapchain->destroySurface();
                 }
             }
         });
-        EventDispatcher::addCustomEventListener(EVENT_RECREATE_WINDOW, [](const CustomEvent &e) -> void {
+
+        _windowRecreatedListener.bind([this](uint32_t windowId) -> void {
+            auto *windowMgr = BasePlatform::getPlatform()->getInterface<ISystemWindowManager>();
+            auto *hWnd = reinterpret_cast<void *>(windowMgr->getWindow(windowId)->getWindowHandle());
             for (auto *swapchain : swapchains) {
-                if (!swapchain->getWindowHandle()) {
-                    swapchain->createSurface(e.args->ptrVal);
+                if (!swapchain->getWindowId()) {
+                    swapchain->createSurface(hWnd);
                 }
             }
         });
@@ -142,7 +147,7 @@ TestBaseI::TestBaseI() {
 }
 
 void TestBaseI::tickScript() {
-    EventDispatcher::dispatchTickEvent(0.F);
+//    EventDispatcher::dispatchTickEvent(0.F);
 }
 
 void TestBaseI::destroyGlobal() {

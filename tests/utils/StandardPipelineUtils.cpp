@@ -7,6 +7,8 @@ namespace {
 gfx::AttributeList attributes{
     {"a_position", gfx::Format::RGB32F, false, 0, false, 0},
     {"a_normal", gfx::Format::RGB32F, false, 1, false, 1},
+    {"a_offset", gfx::Format::RGB32F, false, 2, true, 2},
+    {"a_scale", gfx::Format::RGB32F, false, 2, true, 3},
 };
 gfx::AttributeList lightingAttributes{
     {"a_position", gfx::Format::RG32F, false, 0, false, 0},
@@ -212,6 +214,8 @@ gfx::ShaderInfo getForwardShaderInfo() {
     ccstd::string vertMain = R"(
         void main () {
             vec4 pos = u_model * vec4(a_position, 1.0);
+            pos = vec4(pos.xyz * a_scale + a_offset, pos.w);
+
             v_position = pos.xyz;
             v_normal = (u_model * vec4(a_normal, 0.0)).xyz;
 
@@ -226,6 +230,9 @@ gfx::ShaderInfo getForwardShaderInfo() {
         layout(location = 0) in vec3 a_position;
         layout(location = 1) in vec3 a_normal;
 
+        layout(location = 2) in vec3 a_offset;
+        layout(location = 3) in vec3 a_scale;
+
         layout(set = 0, binding = 2) uniform MVP_Matrix {
             mat4 u_model, u_view, u_projection;
         };
@@ -236,6 +243,8 @@ gfx::ShaderInfo getForwardShaderInfo() {
     vert.glsl3 = R"(
         in vec3 a_position;
         in vec3 a_normal;
+        in vec3 a_offset;
+        in vec3 a_scale;
 
         layout(std140) uniform MVP_Matrix {
             mat4 u_model, u_view, u_projection;
@@ -247,6 +256,8 @@ gfx::ShaderInfo getForwardShaderInfo() {
     vert.glsl1 = R"(
         attribute vec3 a_position;
         attribute vec3 a_normal;
+        attribute vec3 a_offset;
+        attribute vec3 a_scale;
 
         uniform mat4 u_model, u_view, u_projection;
 

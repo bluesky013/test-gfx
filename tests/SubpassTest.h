@@ -24,7 +24,9 @@ protected:
 
     std::unique_ptr<gfx::Buffer>         _vertexPositionBuffer{nullptr};
     std::unique_ptr<gfx::Buffer>         _vertexNormalBuffer{nullptr};
+    std::unique_ptr<gfx::Buffer>         _instanceBuffer{nullptr};
     std::unique_ptr<gfx::Buffer>         _indexBuffer{nullptr};
+    std::unique_ptr<gfx::Buffer>         _indirectBuffer{nullptr};
     std::unique_ptr<gfx::InputAssembler> _inputAssembler{nullptr};
 
     Mat4 _worldMatrix;
@@ -32,7 +34,7 @@ protected:
 
     gfx::Color _clearColor{0.1F, 0.1F, 0.1F, 1.F};
 
-    bool _useDeferred{true};
+    bool _useDeferred{false};
 };
 
 } // namespace cc

@@ -10,6 +10,21 @@ bool SubpassTest::onInit() {
 
     auto obj = loadOBJ("bunny.obj");
 
+    // index buffer
+    const auto &     indicesInfo = obj.GetShapes()[0].mesh.indices;
+    ccstd::vector<uint16_t> indices;
+    indices.reserve(indicesInfo.size());
+    std::transform(indicesInfo.begin(), indicesInfo.end(), std::back_inserter(indices),
+                   [](auto &&info) { return static_cast<uint16_t>(info.vertex_index); });
+
+    _indexBuffer.reset(device->createBuffer({
+        gfx::BufferUsage::INDEX,
+        gfx::MemoryUsage::DEVICE,
+        static_cast<uint>(indices.size() * sizeof(uint16_t)),
+        sizeof(uint16_t),
+    }));
+    _indexBuffer->update(indices.data(), indices.size() * sizeof(uint16_t));
+
     // vertex buffer
     const auto &positions = obj.GetAttrib().vertices;
     _vertexPositionBuffer.reset(device->createBuffer({
@@ -29,20 +44,39 @@ bool SubpassTest::onInit() {
     }));
     _vertexNormalBuffer->update(normals.data(), normals.size() * sizeof(float));
 
-    // index buffer
-    const auto &     indicesInfo = obj.GetShapes()[0].mesh.indices;
-    ccstd::vector<uint16_t> indices;
-    indices.reserve(indicesInfo.size());
-    std::transform(indicesInfo.begin(), indicesInfo.end(), std::back_inserter(indices),
-                   [](auto &&info) { return static_cast<uint16_t>(info.vertex_index); });
-
-    _indexBuffer.reset(device->createBuffer({
-        gfx::BufferUsage::INDEX,
+    struct InstanceData {
+        Vec3 offset;
+        Vec3 scale;
+    };
+    std::vector<InstanceData> instances = {
+        {{-1.f, 0.f, -1.f}, {0.5, 0.5, 0.5}},
+        {{ 1.f, 0.f, -1.f}, {0.5, 0.5, 0.5}},
+        {{ 1.f, 0.f,  1.f}, {0.5, 0.5, 0.5}},
+        {{-1.f, 0.f,  1.f}, {0.5, 0.5, 0.5}},
+    };
+    _instanceBuffer.reset(device->createBuffer({
+        gfx::BufferUsage::VERTEX,
         gfx::MemoryUsage::DEVICE,
-        static_cast<uint>(indices.size() * sizeof(uint16_t)),
-        sizeof(uint16_t),
+        static_cast<uint>(instances.size() * sizeof(InstanceData)),
+        sizeof(InstanceData),
     }));
-    _indexBuffer->update(indices.data(), indices.size() * sizeof(uint16_t));
+    _instanceBuffer->update(instances.data(), instances.size() * sizeof(InstanceData));
+
+    std::vector<gfx::DrawIndexedIndirectCommand> indirectCmds(instances.size());
+    for (uint32_t i = 0; i < instances.size(); ++i) {
+        indirectCmds[i].indexCount    = _indexBuffer->getCount();
+        indirectCmds[i].instanceCount = 1;
+        indirectCmds[i].firstIndex    = 0;
+        indirectCmds[i].vertexOffset  = 0;
+        indirectCmds[i].firstInstance = i;
+    }
+    _indirectBuffer.reset(device->createBuffer({
+        gfx::BufferUsage::INDIRECT,
+        gfx::MemoryUsage::DEVICE,
+        static_cast<uint>(indirectCmds.size() * sizeof(gfx::DrawIndexedIndirectCommand)),
+        sizeof(gfx::DrawIndexedIndirectCommand),
+    }));
+    _indirectBuffer->update(indirectCmds.data(), indirectCmds.size() * sizeof(gfx::DrawIndexedIndirectCommand));
 
     constexpr float cameraDistance = 5.F;
 
@@ -66,10 +100,11 @@ bool SubpassTest::onInit() {
         std::copy(&groundColor.x, &groundColor.x + 4, _ubos.getBuffer(standard::CAMERA, i) + 16);
     }
 
-    gfx::InputAssemblerInfo inputAssemblerInfo;
+    gfx::InputAssemblerInfo inputAssemblerInfo = {};
     inputAssemblerInfo.attributes = _deferred.gbufferShader->getAttributes();
     inputAssemblerInfo.vertexBuffers.emplace_back(_vertexPositionBuffer.get());
     inputAssemblerInfo.vertexBuffers.emplace_back(_vertexNormalBuffer.get());
+    inputAssemblerInfo.vertexBuffers.emplace_back(_instanceBuffer.get());
     inputAssemblerInfo.indexBuffer = _indexBuffer.get();
     _inputAssembler.reset(device->createInputAssembler(inputAssemblerInfo));
 
@@ -104,6 +139,9 @@ void SubpassTest::onDestroy() {
 
     _indexBuffer->destroy();
     _indexBuffer.reset();
+
+    _indirectBuffer->destroy();
+    _indirectBuffer.reset();
 
     _inputAssembler->destroy();
     _inputAssembler.reset();
@@ -141,6 +179,13 @@ void SubpassTest::onTick() {
 
     fg.reset();
 
+#define UES_MULTI_DRAW
+#ifndef UES_MULTI_DRAW
+    gfx::DrawInfo drawInfo = {};
+    drawInfo.indexCount = _indexBuffer->getCount();
+    drawInfo.instanceCount = 4;
+#endif
+
     for (size_t i = 0; i < swapchains.size(); ++i) {
         auto *    swapchain = swapchains[i];
         auto *    fbo       = fbos[i];
@@ -150,13 +195,21 @@ void SubpassTest::onTick() {
             _deferred.recordCommandBuffer(device, commandBuffer, fbo, renderArea, _clearColor, [=]() {
                 commandBuffer->bindInputAssembler(_inputAssembler.get());
                 _ubos.bindDescriptorSet(commandBuffer, 0, i);
-                commandBuffer->draw(_inputAssembler.get());
+#ifdef UES_MULTI_DRAW
+                commandBuffer->drawIndexedIndirect(_indirectBuffer.get(), 0, 4, sizeof(gfx::DrawIndexedIndirectCommand));
+#else
+                commandBuffer->draw(drawInfo);
+#endif
             });
         } else {
             _forward.recordCommandBuffer(device, commandBuffer, fbo, renderArea, _clearColor, [=]() {
                 commandBuffer->bindInputAssembler(_inputAssembler.get());
                 _ubos.bindDescriptorSet(commandBuffer, 0, i);
-                commandBuffer->draw(_inputAssembler.get());
+#ifdef UES_MULTI_DRAW
+                commandBuffer->drawIndexedIndirect(_indirectBuffer.get(), 0, 4, sizeof(gfx::DrawIndexedIndirectCommand));
+#else
+                commandBuffer->draw(drawInfo);
+#endif
             });
         }
     }

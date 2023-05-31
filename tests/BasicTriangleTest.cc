@@ -151,7 +151,7 @@ void BasicTriangle::createVertexBuffer() {
     };
     _uniformBufferMVP = device->createBuffer(uniformBufferMVPInfo);
 
-    uint16_t        indices[]       = {1, 3, 0, 1, 2, 3, 2, 4, 3};
+    uint16_t        indices[]       = {1, 3, 0, 1, 2, 3, 2 ,4, 3};
     gfx::BufferInfo indexBufferInfo = {
         gfx::BufferUsageBit::INDEX,
         gfx::MemoryUsage::DEVICE,
@@ -161,18 +161,21 @@ void BasicTriangle::createVertexBuffer() {
     _indexBuffer = device->createBuffer(indexBufferInfo);
     _indexBuffer->update(indices, sizeof(indices));
 
-    gfx::DrawInfo drawInfo;
+    gfx::DrawIndexedIndirectCommand drawInfo;
+    drawInfo.indexCount = 0;
+    drawInfo.instanceCount = 1;
     drawInfo.firstIndex = 3;
-    drawInfo.indexCount = 3;
+    drawInfo.vertexOffset = 0;
+    drawInfo.firstInstance = 0;
 
     gfx::BufferInfo indirectBufferInfo = {
         gfx::BufferUsageBit::INDIRECT,
         gfx::MemoryUsage::DEVICE,
-        sizeof(gfx::DrawInfo),
-        sizeof(gfx::DrawInfo),
+        sizeof(gfx::DrawIndexedIndirectCommand),
+        sizeof(gfx::DrawIndexedIndirectCommand),
     };
     _indirectBuffer = device->createBuffer(indirectBufferInfo);
-    _indirectBuffer->update(&drawInfo, sizeof(gfx::DrawInfo));
+    _indirectBuffer->update(&drawInfo, sizeof(gfx::DrawIndexedIndirectCommand));
 }
 
 void BasicTriangle::createInputAssembler() {
@@ -181,7 +184,6 @@ void BasicTriangle::createInputAssembler() {
     inputAssemblerInfo.attributes.emplace_back(std::move(position));
     inputAssemblerInfo.vertexBuffers.emplace_back(_vertexBuffer);
     inputAssemblerInfo.indexBuffer    = _indexBuffer;
-    inputAssemblerInfo.indirectBuffer = _indirectBuffer;
     _inputAssembler                   = device->createInputAssembler(inputAssemblerInfo);
 }
 
@@ -287,7 +289,7 @@ void BasicTriangle::onTick() {
         if (!visible) CC_LOG_DEBUG("occlusion query result: %d", visible = true);
     }
 
-    commandBuffer->draw(_inputAssembler);
+    ccommandBuffer->drawIndirect(_indirectBuffer, 0, 1, sizeof(gfx::DrawIndirectCommand));
     commandBuffer->endQuery(queryPool, 0);
     commandBuffer->endRenderPass();
 
@@ -297,7 +299,7 @@ void BasicTriangle::onTick() {
     commandBuffer->bindPipelineState(_pipelineState);
     commandBuffer->bindInputAssembler(_inputAssembler);
     commandBuffer->bindDescriptorSet(0, _descriptorSet);
-    commandBuffer->draw(_inputAssembler);
+    commandBuffer->drawIndirect(_indirectBuffer, 0, 1, sizeof(gfx::DrawIndirectCommand));
     commandBuffer->endRenderPass();
 #endif
 

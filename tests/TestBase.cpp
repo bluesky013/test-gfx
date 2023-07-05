@@ -111,8 +111,28 @@ TestBaseI::TestBaseI() {
 
             if (!renderPass) {
                 gfx::RenderPassInfo renderPassInfo;
-                renderPassInfo.colorAttachments.emplace_back().format = swapchains[0]->getColorTexture()->getFormat();
+                auto &back = renderPassInfo.colorAttachments.emplace_back();
+                back.format = swapchains[0]->getColorTexture()->getFormat();
+                back.barrier = device->getGeneralBarrier({
+                    gfx::AccessFlagBit::NONE,
+                    gfx::AccessFlagBit::PRESENT,
+                });
+
                 renderPassInfo.depthStencilAttachment.format          = swapchains[0]->getDepthStencilTexture()->getFormat();
+
+                renderPassInfo.dependencies.emplace_back();
+                auto &dep1 = renderPassInfo.dependencies.back();
+                dep1.srcSubpass = gfx::INVALID_BINDING;
+                dep1.dstSubpass = 0;
+                dep1.prevAccesses = gfx::AccessFlagBit::NONE;
+                dep1.nextAccesses = gfx::AccessFlagBit::COLOR_ATTACHMENT_WRITE;
+
+                renderPassInfo.dependencies.emplace_back();
+                auto &dep2 = renderPassInfo.dependencies.back();
+                dep2.srcSubpass = 0;
+                dep2.dstSubpass = gfx::INVALID_BINDING;
+                dep2.prevAccesses = gfx::AccessFlagBit::COLOR_ATTACHMENT_WRITE;
+                dep2.nextAccesses = gfx::AccessFlagBit::PRESENT;
                 renderPass                                            = device->createRenderPass(renderPassInfo);
             }
 
